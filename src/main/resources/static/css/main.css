@@ -441,6 +441,10 @@ html, body {
 .grid-cells.layout-4  { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
 /* layout-9 → 3×3 */
 .grid-cells.layout-9  { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); }
+/* layout-16 → 4×4 */
+.grid-cells.layout-16 { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); }
+/* layout-25 → 5×5 */
+.grid-cells.layout-25 { grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); }
 
 /* Individual grid cell */
 .grid-cell {
@@ -533,6 +537,20 @@ html, body {
     color: rgba(255,255,255,0.5);
 }
 
+/* Scale down text in denser grids */
+.grid-cells.layout-16 .cell-title { font-size: 0.72rem; -webkit-line-clamp: 2; }
+.grid-cells.layout-16 .cell-source-badge { font-size: 9px; }
+.grid-cells.layout-16 .cell-meta { font-size: 10px; margin-top: 4px; }
+.grid-cells.layout-16 .cell-content { padding: 8px; }
+.grid-cells.layout-16 .cell-rank { font-size: 9px; padding: 2px 5px; }
+
+.grid-cells.layout-25 .cell-title { font-size: 0.62rem; -webkit-line-clamp: 2; }
+.grid-cells.layout-25 .cell-source-badge { font-size: 8px; gap: 3px; }
+.grid-cells.layout-25 .cell-source-dot { width: 5px; height: 5px; }
+.grid-cells.layout-25 .cell-meta { display: none; }
+.grid-cells.layout-25 .cell-content { padding: 6px 7px; }
+.grid-cells.layout-25 .cell-rank { font-size: 8px; padding: 2px 4px; }
+
 /* Refresh ripple on cell update */
 @keyframes cellFlash {
     0%   { box-shadow: inset 0 0 0 2px rgba(255,255,255,0); }
@@ -552,5 +570,7 @@ html, body {
     .queue-item { width: 58px; height: 38px; }
     .filter-panel { right: 8px; min-width: calc(100vw - 16px); }
     .nav-btn { display: none; }
-    .grid-cells.layout-9 { grid-template-columns: repeat(2,1fr); grid-template-rows: repeat(2,1fr); }
+    .grid-cells.layout-9,
+    .grid-cells.layout-16,
+    .grid-cells.layout-25 { grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); }
 }
