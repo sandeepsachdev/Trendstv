@@ -268,12 +268,14 @@ html, body {
 .slide-overlay {
     position: absolute; inset: 0; z-index: 10;
     display: flex; flex-direction: column;
-    justify-content: space-between;
-    padding: 28px 48px 140px;
+    justify-content: center;
+    padding: 80px 52px 160px;
     text-decoration: none; color: #fff;
 }
 
 .overlay-top {
+    position: absolute;
+    top: 24px; left: 48px;
     display: flex; align-items: center; gap: 10px;
 }
 
@@ -544,7 +546,8 @@ html, body {
    RESPONSIVE
 ══════════════════════════════════════════════ */
 @media (max-width: 768px) {
-    .slide-overlay { padding: 20px 20px 110px; }
+    .slide-overlay { padding: 60px 20px 110px; }
+    .overlay-top { left: 20px; }
     .overlay-bottom { max-width: 100%; }
     .queue-item { width: 58px; height: 38px; }
     .filter-panel { right: 8px; min-width: calc(100vw - 16px); }
