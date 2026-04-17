@@ -1,234 +1,506 @@
 (function () {
     'use strict';
 
-    const PAGE_SIZE = 24;
-    let allItems = [];
-    let displayedCount = 0;
-    let activeSource = '';
-    let activeCategory = '';
-    let isLoading = false;
-
-    const grid = document.getElementById('trendsGrid');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const errorState = document.getElementById('errorState');
-    const loadMoreWrap = document.getElementById('loadMoreWrap');
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    const lastUpdatedEl = document.getElementById('lastUpdated');
-    const statsBar = document.getElementById('statsBar');
-    const refreshBtn = document.getElementById('refreshBtn');
+    // ── Config ─────────────────────────────────────────────────────
+    const SLIDE_DUR  = 8000;   // ms per slide (single mode)
+    const TRANS_MS   = 700;    // crossfade (must match CSS --transition)
+    const QUEUE_SIZE = 6;      // thumbnails in single-mode queue
+    const CELL_MIN   = 5000;   // min ms between grid cell refreshes
+    const CELL_MAX   = 9000;   // max ms between grid cell refreshes
 
     const SOURCE_COLORS = {
-        'Reddit': '#ff4500',
-        'Hacker News': '#ff6600',
-        'GitHub': '#e0e0e0',
+        'Reddit':       '#ff4500',
+        'Hacker News':  '#ff6600',
+        'GitHub':       '#58a6ff',
         'Product Hunt': '#da552f'
     };
 
-    const SOURCE_ICONS = {
-        'Reddit': '🔴',
-        'Hacker News': '🟠',
-        'GitHub': '⚫',
-        'Product Hunt': '🟤'
+    const CAT_GRADIENTS = {
+        'Technology':    'linear-gradient(135deg,#0f0c29,#302b63,#24243e)',
+        'News':          'linear-gradient(135deg,#141e30,#243b55)',
+        'Science':       'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',
+        'Gaming':        'linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)',
+        'Entertainment': 'linear-gradient(135deg,#200122,#6f0000)',
+        'Music':         'linear-gradient(135deg,#16222a,#3a6073)',
+        'Sports':        'linear-gradient(135deg,#1d4350,#a43931)',
+        'Business':      'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',
+        'Trending':      'linear-gradient(135deg,#232526,#414345)'
     };
 
-    const CATEGORY_ICONS = {
-        'Technology': '💻',
-        'News': '📰',
-        'Science': '🔬',
-        'Gaming': '🎮',
-        'Entertainment': '🎬',
-        'Music': '🎵',
-        'Sports': '⚽',
-        'Business': '📈',
-        'Trending': '🔥'
-    };
+    // ── State ──────────────────────────────────────────────────────
+    let items          = [];
+    let currentIdx     = 0;
+    let activeLayer    = 'A';
+    let slideTimer     = null;
+    let paused         = false;
+    let layout         = 1;     // 1, 4, or 9
+    let activeSource   = '';
+    let activeCategory = '';
+    let cellTimers     = [];    // per-cell interval refs (grid mode)
+    let cellIndices    = [];    // which item each cell is currently showing
 
-    async function loadTrends(refresh = false) {
-        if (isLoading) return;
-        isLoading = true;
+    // ── DOM refs ───────────────────────────────────────────────────
+    const $ = id => document.getElementById(id);
+    const loadingScreen  = $('loadingScreen');
+    const loadingBarFill = $('loadingBarFill');
+    const errorScreen    = $('errorScreen');
+    const tv             = $('tv');
+    const modeSingle     = $('modeSingle');
+    const modeGrid       = $('modeGrid');
+    const gridCells      = $('gridCells');
+    const slideA         = $('slideA');
+    const slideB         = $('slideB');
+    const slideOverlay   = $('slideOverlay');
+    const slideSource    = $('slideSource');
+    const slideCategory  = $('slideCategory');
+    const slideTitle     = $('slideTitle');
+    const slideDesc      = $('slideDesc');
+    const slideRank      = $('slideRank');
+    const slideMeta1     = $('slideMeta1');
+    const slideMeta2     = $('slideMeta2');
+    const progressFill   = $('progressFill');
+    const queue          = $('queue');
+    const pauseIndicator = $('pauseIndicator');
+    const navPrev        = $('navPrev');
+    const navNext        = $('navNext');
+    const filterToggle   = $('filterToggle');
+    const filterPanel    = $('filterPanel');
+    const layoutPicker   = $('layoutPicker');
 
-        showLoading(true);
-        hideError();
+    // ── Load / API ─────────────────────────────────────────────────
+    async function load(forceRefresh = false) {
+        setLoading(true);
 
-        if (refresh) {
-            refreshBtn.classList.add('spinning');
-            try { await fetch('/api/trends/refresh', { method: 'POST' }); } catch (e) {}
+        if (forceRefresh) {
+            try { await fetch('/api/trends/refresh', { method: 'POST' }); } catch (_) {}
         }
 
+        animateLoadingBar();
+
         const params = new URLSearchParams();
-        if (activeSource) params.set('source', activeSource);
+        if (activeSource)   params.set('source', activeSource);
         if (activeCategory) params.set('category', activeCategory);
 
         try {
             const res = await fetch('/api/trends?' + params.toString());
-            if (!res.ok) throw new Error('Network error');
+            if (!res.ok) throw new Error('bad');
             const data = await res.json();
+            items = (data.items || []).filter(i => i.title);
 
-            allItems = data.items || [];
-            displayedCount = 0;
-            grid.innerHTML = '';
+            if (!items.length) { showError('No trends found for this filter.'); return; }
 
-            updateStats(data.sourceCounts || {});
-            updateLastUpdated(data.lastUpdated);
-
-            renderNextPage();
+            setLoading(false);
+            tv.style.display = 'flex';
+            applyLayout(layout);
         } catch (e) {
             showError();
-        } finally {
-            isLoading = false;
-            showLoading(false);
-            refreshBtn.classList.remove('spinning');
         }
     }
 
-    function renderNextPage() {
-        const slice = allItems.slice(displayedCount, displayedCount + PAGE_SIZE);
-        slice.forEach((item, i) => renderCard(item, displayedCount + i + 1));
-        displayedCount += slice.length;
+    function animateLoadingBar() {
+        let w = 0;
+        loadingBarFill.style.width = '0%';
+        const iv = setInterval(() => {
+            w = Math.min(w + Math.random() * 16, 88);
+            loadingBarFill.style.width = w + '%';
+        }, 200);
+        setTimeout(() => { clearInterval(iv); loadingBarFill.style.width = '100%'; }, 1800);
+    }
 
-        if (displayedCount < allItems.length) {
-            loadMoreWrap.style.display = 'block';
-            loadMoreBtn.textContent = `Load more trends (${allItems.length - displayedCount} remaining)`;
+    function setLoading(show) {
+        loadingScreen.style.display = show ? 'flex' : 'none';
+        errorScreen.classList.add('hidden');
+    }
+
+    function showError(msg) {
+        loadingScreen.style.display = 'none';
+        errorScreen.classList.remove('hidden');
+        tv.style.display = 'none';
+        if (msg) errorScreen.querySelector('p').textContent = msg;
+    }
+
+    // ── Layout switching ───────────────────────────────────────────
+    function applyLayout(n) {
+        layout = n;
+
+        // Tear down old mode
+        stopSlideTimer();
+        clearGridTimers();
+
+        if (n === 1) {
+            modeSingle.classList.remove('hidden');
+            modeGrid.classList.add('hidden');
+            currentIdx = 0;
+            activeLayer = 'A';
+            showSlide(currentIdx, false);
+            buildQueue();
+            startSlideTimer();
         } else {
-            loadMoreWrap.style.display = 'none';
-        }
-
-        if (allItems.length === 0) {
-            grid.innerHTML = `<div class="empty-state"><p>No trends found for this filter.</p></div>`;
+            modeSingle.classList.add('hidden');
+            modeGrid.classList.remove('hidden');
+            buildGrid(n);
         }
     }
 
-    function renderCard(item, rank) {
-        const template = document.getElementById('cardTemplate');
-        const clone = template.content.cloneNode(true);
-        const card = clone.querySelector('.trend-card');
+    // ── SINGLE MODE ────────────────────────────────────────────────
+    function showSlide(idx, animate) {
+        const item = items[idx];
+        if (!item) return;
 
-        card.dataset.source = item.source;
+        const incoming = activeLayer === 'A' ? slideB : slideA;
+        const outgoing = activeLayer === 'A' ? slideA : slideB;
 
-        const link = card.querySelector('.card-link');
-        link.href = item.url || '#';
+        setBg(incoming, item);
 
-        const imgEl = card.querySelector('.card-image');
-        const placeholder = card.querySelector('.card-image-placeholder');
-        const placeholderIcon = card.querySelector('.placeholder-icon');
-
-        placeholderIcon.textContent = CATEGORY_ICONS[item.category] || '🔥';
-
-        if (item.imageUrl && item.imageUrl.startsWith('http')) {
-            imgEl.src = item.imageUrl;
-            imgEl.alt = item.title;
-            imgEl.onerror = () => {
-                imgEl.style.display = 'none';
-                placeholder.style.display = 'flex';
-            };
-            placeholder.style.display = 'none';
-        } else {
-            imgEl.style.display = 'none';
-            placeholder.style.display = 'flex';
+        if (animate) {
+            slideOverlay.classList.add('out');
         }
 
-        const sourceDot = card.querySelector('.source-dot');
-        const sourceName = card.querySelector('.source-name');
-        sourceDot.style.background = SOURCE_COLORS[item.source] || '#888';
-        sourceName.textContent = item.source;
+        incoming.classList.remove('active', 'kb');
+        void incoming.offsetWidth;
+        incoming.classList.add('active', 'kb');
+        outgoing.classList.remove('active', 'kb');
 
-        card.querySelector('.rank-num').textContent = rank;
-        card.querySelector('.card-category').textContent = item.category || 'Trending';
-        card.querySelector('.card-title').textContent = item.title;
-        card.querySelector('.card-desc').textContent = item.description || '';
-        card.querySelector('.score-val').textContent = formatNumber(item.score);
-        card.querySelector('.comments-val').textContent = formatNumber(item.commentCount);
+        activeLayer = activeLayer === 'A' ? 'B' : 'A';
 
-        grid.appendChild(clone);
+        const delay = animate ? TRANS_MS / 2 : 0;
+        setTimeout(() => {
+            const color = SOURCE_COLORS[item.source] || '#fff';
+            slideOverlay.href         = item.url || '#';
+            slideSource.textContent   = item.source;
+            slideSource.style.setProperty('--source-color', color);
+            slideCategory.textContent = item.category || 'Trending';
+            slideRank.textContent     = '#' + (idx + 1);
+            slideTitle.textContent    = item.title;
+            slideDesc.textContent     = item.description || '';
+            slideMeta1.textContent    = fmt(item.score) + ' pts';
+            slideMeta2.textContent    = fmt(item.commentCount) + ' comments';
+            slideOverlay.classList.remove('out');
+        }, delay);
+
+        updateQueueHighlight(idx);
     }
 
-    function updateStats(sourceCounts) {
-        statsBar.innerHTML = '';
-        const total = Object.values(sourceCounts).reduce((a, b) => a + b, 0);
+    function advance(dir) {
+        currentIdx = (currentIdx + dir + items.length) % items.length;
+        showSlide(currentIdx, true);
+        startSlideTimer();
+    }
 
-        const totalPill = document.createElement('div');
-        totalPill.className = 'stat-pill';
-        totalPill.innerHTML = `<span style="font-weight:600;color:#f0f0f5">${total}</span> trends`;
-        statsBar.appendChild(totalPill);
+    function startSlideTimer() {
+        stopSlideTimer();
+        if (paused) return;
 
-        Object.entries(sourceCounts).forEach(([source, count]) => {
-            const pill = document.createElement('div');
-            pill.className = 'stat-pill';
-            pill.innerHTML = `
-                <span class="stat-dot" style="background:${SOURCE_COLORS[source] || '#888'}"></span>
-                ${source}
-                <span class="stat-count">${count}</span>
-            `;
-            pill.addEventListener('click', () => {
-                setSourceFilter(source === activeSource ? '' : source);
+        progressFill.style.transition = 'none';
+        progressFill.style.width = '0%';
+        void progressFill.offsetWidth;
+        progressFill.style.transition = `width ${SLIDE_DUR}ms linear`;
+        progressFill.style.width = '100%';
+
+        slideTimer = setTimeout(() => advance(1), SLIDE_DUR);
+    }
+
+    function stopSlideTimer() {
+        clearTimeout(slideTimer);
+        slideTimer = null;
+        progressFill.style.transition = 'none';
+    }
+
+    function buildQueue() {
+        queue.innerHTML = '';
+        const count = Math.min(QUEUE_SIZE, items.length);
+        for (let i = 0; i < count; i++) {
+            const item = items[i];
+            const el   = document.createElement('div');
+            el.className  = 'queue-item' + (i === currentIdx ? ' active' : '');
+            el.dataset.i  = i;
+
+            const bg  = document.createElement('div');
+            bg.className  = 'queue-item-bg';
+            applyBgStyle(bg, item);
+
+            const ov  = document.createElement('div');
+            ov.className  = 'queue-item-overlay';
+            const dot = document.createElement('div');
+            dot.className = 'queue-item-dot';
+            dot.style.setProperty('--source-color', SOURCE_COLORS[item.source] || '#fff');
+            ov.appendChild(dot);
+
+            el.appendChild(bg);
+            el.appendChild(ov);
+            el.addEventListener('click', () => {
+                currentIdx = i;
+                showSlide(currentIdx, true);
+                startSlideTimer();
             });
-            statsBar.appendChild(pill);
-        });
+            queue.appendChild(el);
+        }
     }
 
-    function updateLastUpdated(ts) {
-        if (!ts) return;
-        const d = new Date(ts);
-        lastUpdatedEl.textContent = 'Updated ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    function updateQueueHighlight(idx) {
+        const vis = idx % QUEUE_SIZE;
+        queue.querySelectorAll('.queue-item').forEach((el, i) =>
+            el.classList.toggle('active', i === vis));
     }
 
-    function formatNumber(n) {
-        if (n === undefined || n === null) return '0';
-        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-        if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-        return String(n);
+    // Pause on hover over single mode
+    modeSingle.addEventListener('mouseenter', () => {
+        if (!paused) {
+            paused = true; stopSlideTimer();
+            pauseIndicator.classList.remove('hidden');
+        }
+    });
+    modeSingle.addEventListener('mouseleave', () => {
+        if (paused) {
+            paused = false;
+            pauseIndicator.classList.add('hidden');
+            startSlideTimer();
+        }
+    });
+
+    navPrev.addEventListener('click', e => { e.stopPropagation(); advance(-1); });
+    navNext.addEventListener('click', e => { e.stopPropagation(); advance(1); });
+
+    document.addEventListener('keydown', e => {
+        if (layout !== 1) return;
+        if (e.key === 'ArrowLeft')  advance(-1);
+        if (e.key === 'ArrowRight') advance(1);
+        if (e.key === ' ') {
+            e.preventDefault();
+            paused = !paused;
+            if (paused) { stopSlideTimer(); pauseIndicator.classList.remove('hidden'); }
+            else        { pauseIndicator.classList.add('hidden'); startSlideTimer(); }
+        }
+    });
+
+    // ── GRID MODE ──────────────────────────────────────────────────
+    function buildGrid(n) {
+        clearGridTimers();
+        gridCells.innerHTML = '';
+        gridCells.className = `grid-cells layout-${n}`;
+
+        cellIndices = [];
+
+        // Assign each cell a different starting item, shuffled
+        const pool = shuffled(items.map((_, i) => i));
+
+        for (let c = 0; c < n; c++) {
+            const itemIdx = pool[c % pool.length];
+            cellIndices.push(itemIdx);
+
+            const cell = buildCell(c, itemIdx);
+            gridCells.appendChild(cell);
+
+            // Stagger each cell's refresh timer
+            const delay = c * (CELL_MIN / n);
+            const t = setTimeout(() => scheduleCell(c), delay);
+            cellTimers.push(t);
+        }
     }
 
-    function showLoading(show) {
-        loadingOverlay.style.display = show ? 'flex' : 'none';
-        if (show) grid.style.opacity = '0';
-        else grid.style.opacity = '1';
+    function buildCell(cellIdx, itemIdx) {
+        const item = items[itemIdx];
+        const cell = document.createElement('div');
+        cell.className   = 'grid-cell';
+        cell.dataset.cell = cellIdx;
+
+        // Two background layers for crossfade
+        const bgA = document.createElement('div');
+        bgA.className = 'cell-bg active kb';
+        bgA.dataset.layer = 'A';
+        applyBgStyle(bgA, item);
+
+        const bgB = document.createElement('div');
+        bgB.className = 'cell-bg';
+        bgB.dataset.layer = 'B';
+
+        const rank = document.createElement('div');
+        rank.className = 'cell-rank';
+        rank.textContent = '#' + (itemIdx + 1);
+
+        const hint = document.createElement('div');
+        hint.className   = 'cell-open-hint';
+        hint.textContent = 'Open ↗';
+
+        const content = document.createElement('a');
+        content.className  = 'cell-content';
+        content.href       = item.url || '#';
+        content.target     = '_blank';
+        content.rel        = 'noopener noreferrer';
+
+        const sourceBadge = document.createElement('div');
+        sourceBadge.className = 'cell-source-badge';
+        const dot = document.createElement('span');
+        dot.className = 'cell-source-dot';
+        dot.style.setProperty('--source-color', SOURCE_COLORS[item.source] || '#fff');
+        sourceBadge.appendChild(dot);
+        sourceBadge.appendChild(document.createTextNode(item.source));
+
+        const title = document.createElement('div');
+        title.className = 'cell-title';
+        title.textContent = item.title;
+
+        const meta = document.createElement('div');
+        meta.className = 'cell-meta';
+        meta.textContent = fmt(item.score) + ' pts · ' + fmt(item.commentCount) + ' comments';
+
+        content.appendChild(sourceBadge);
+        content.appendChild(title);
+        content.appendChild(meta);
+
+        cell.appendChild(bgA);
+        cell.appendChild(bgB);
+        cell.appendChild(rank);
+        cell.appendChild(hint);
+        cell.appendChild(content);
+
+        return cell;
     }
 
-    function showError() {
-        errorState.classList.remove('hidden');
-        loadingOverlay.style.display = 'none';
+    function refreshCell(cellIdx) {
+        if (!items.length) return;
+
+        // Pick a new item not currently shown in any cell
+        const inUse = new Set(cellIndices);
+        let candidates = items.map((_, i) => i).filter(i => !inUse.has(i));
+        if (!candidates.length) candidates = items.map((_, i) => i);
+
+        const newIdx  = candidates[Math.floor(Math.random() * candidates.length)];
+        cellIndices[cellIdx] = newIdx;
+
+        const item = items[newIdx];
+        const cellEl = gridCells.querySelector(`[data-cell="${cellIdx}"]`);
+        if (!cellEl) return;
+
+        // Find active/inactive layers
+        const bgA = cellEl.querySelector('[data-layer="A"]');
+        const bgB = cellEl.querySelector('[data-layer="B"]');
+        const activeLayerEl   = bgA.classList.contains('active') ? bgA : bgB;
+        const inactiveLayerEl = bgA.classList.contains('active') ? bgB : bgA;
+
+        // Load new image on inactive layer then crossfade
+        applyBgStyle(inactiveLayerEl, item);
+        inactiveLayerEl.classList.remove('kb');
+        void inactiveLayerEl.offsetWidth;
+
+        setTimeout(() => {
+            inactiveLayerEl.classList.add('active', 'kb');
+            activeLayerEl.classList.remove('active', 'kb');
+
+            // Update text content
+            const content = cellEl.querySelector('.cell-content');
+            content.href  = item.url || '#';
+
+            const dot = cellEl.querySelector('.cell-source-dot');
+            dot.style.setProperty('--source-color', SOURCE_COLORS[item.source] || '#fff');
+
+            cellEl.querySelector('.cell-source-badge').childNodes[1].textContent = item.source;
+            cellEl.querySelector('.cell-title').textContent = item.title;
+            cellEl.querySelector('.cell-meta').textContent =
+                fmt(item.score) + ' pts · ' + fmt(item.commentCount) + ' comments';
+            cellEl.querySelector('.cell-rank').textContent = '#' + (newIdx + 1);
+
+            // Flash ring
+            cellEl.classList.add('refreshing');
+            setTimeout(() => cellEl.classList.remove('refreshing'), 800);
+        }, 50);
     }
 
-    function hideError() {
-        errorState.classList.add('hidden');
+    function scheduleCell(cellIdx) {
+        const delay = CELL_MIN + Math.random() * (CELL_MAX - CELL_MIN);
+        const t = setTimeout(() => {
+            refreshCell(cellIdx);
+            scheduleCell(cellIdx); // reschedule
+        }, delay);
+        cellTimers.push(t);
     }
 
-    function setSourceFilter(source) {
-        activeSource = source;
-        document.querySelectorAll('#sourceFilters .chip').forEach(c => {
-            c.classList.toggle('active', (c.dataset.source || '') === source);
-        });
-        loadTrends();
+    function clearGridTimers() {
+        cellTimers.forEach(clearTimeout);
+        cellTimers = [];
     }
 
-    function setCategoryFilter(category) {
-        activeCategory = category;
-        document.querySelectorAll('#categoryFilters .chip').forEach(c => {
-            c.classList.toggle('active', (c.dataset.category || '') === category);
-        });
-        loadTrends();
+    // ── Background helpers ─────────────────────────────────────────
+    function setBg(el, item) {
+        applyBgStyle(el, item);
     }
 
-    // Wire up filter chips
+    function applyBgStyle(el, item) {
+        if (item.imageUrl && item.imageUrl.startsWith('http')) {
+            el.style.backgroundImage = `url("${item.imageUrl}")`;
+            el.style.backgroundSize  = 'cover';
+            el.style.background      = '';
+        } else {
+            el.style.background      = CAT_GRADIENTS[item.category] || CAT_GRADIENTS['Trending'];
+            el.style.backgroundImage = '';
+        }
+    }
+
+    // ── Filters ────────────────────────────────────────────────────
+    filterToggle.addEventListener('click', e => {
+        e.stopPropagation();
+        filterPanel.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', e => {
+        if (!filterPanel.contains(e.target) && e.target !== filterToggle) {
+            filterPanel.classList.add('hidden');
+        }
+    });
+
     document.querySelectorAll('#sourceFilters .chip').forEach(btn => {
-        btn.addEventListener('click', () => setSourceFilter(btn.dataset.source || ''));
+        btn.addEventListener('click', () => {
+            activeSource = btn.dataset.source || '';
+            document.querySelectorAll('#sourceFilters .chip').forEach(c =>
+                c.classList.toggle('active', (c.dataset.source || '') === activeSource));
+            filterPanel.classList.add('hidden');
+            load(false);
+        });
     });
 
     document.querySelectorAll('#categoryFilters .chip').forEach(btn => {
-        btn.addEventListener('click', () => setCategoryFilter(btn.dataset.category || ''));
+        btn.addEventListener('click', () => {
+            activeCategory = btn.dataset.category || '';
+            document.querySelectorAll('#categoryFilters .chip').forEach(c =>
+                c.classList.toggle('active', (c.dataset.category || '') === activeCategory));
+            filterPanel.classList.add('hidden');
+            load(false);
+        });
     });
 
-    loadMoreBtn.addEventListener('click', renderNextPage);
+    // ── Layout picker ──────────────────────────────────────────────
+    layoutPicker.querySelectorAll('.layout-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const n = parseInt(btn.dataset.layout, 10);
+            layoutPicker.querySelectorAll('.layout-btn').forEach(b =>
+                b.classList.toggle('active', b === btn));
+            applyLayout(n);
+        });
+    });
 
-    refreshBtn.addEventListener('click', () => loadTrends(true));
+    // ── Utilities ──────────────────────────────────────────────────
+    function fmt(n) {
+        if (!n) return '0';
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+        return String(n);
+    }
 
-    // Auto-refresh every 10 minutes
-    setInterval(() => loadTrends(false), 10 * 60 * 1000);
+    function shuffled(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
 
-    // Initial load
-    loadTrends();
+    // ── Auto-refresh every 10 min ──────────────────────────────────
+    setInterval(() => load(false), 10 * 60 * 1000);
 
-    // Expose for retry button
-    window.loadTrends = loadTrends;
+    // ── Public API ─────────────────────────────────────────────────
+    window.tv = { load };
+
+    load(false);
+
 })();
