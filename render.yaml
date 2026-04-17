@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: trendstv
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: PORT
+        value: 8080
+      # Optional: add your API tokens for more data sources
+      # - key: GITHUB_TOKEN
+      #   sync: false
+      # - key: PRODUCTHUNT_TOKEN
+      #   sync: false
