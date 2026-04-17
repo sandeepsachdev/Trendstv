@@ -195,6 +195,14 @@ html, body {
 .chip:hover  { border-color: rgba(255,255,255,0.35); color: #fff; }
 .chip.active { background: #7c6af7; border-color: #7c6af7; color: #fff; }
 
+/* Coloured dot inside source chips */
+.chip-dot {
+    display: inline-block;
+    width: 7px; height: 7px; border-radius: 50%;
+    flex-shrink: 0;
+    margin-right: 2px;
+}
+
 /* ══════════════════════════════════════════════
    SINGLE / GRID MODE CONTAINERS
 ══════════════════════════════════════════════ */
@@ -288,11 +296,21 @@ html, body {
     display: inline-block;
 }
 
+.slide-region {
+    padding: 4px 11px; border-radius: 16px;
+    font-size: 11px; font-weight: 600;
+    color: rgba(255,255,255,0.75);
+    background: rgba(255,255,255,0.09);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    letter-spacing: 0.4px;
+}
+
 .slide-category {
     padding: 4px 11px; border-radius: 16px;
     font-size: 11px; font-weight: 500;
-    color: rgba(255,255,255,0.65);
-    background: rgba(255,255,255,0.09);
+    color: rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.06);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
 }

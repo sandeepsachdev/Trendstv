@@ -21,14 +21,14 @@
         TrendsTV
     </div>
     <div class="loading-bar"><div class="loading-bar-fill" id="loadingBarFill"></div></div>
-    <p class="loading-label">Fetching trends…</p>
+    <p class="loading-label">Fetching latest news…</p>
 </div>
 
 <!-- Error screen -->
 <div class="error-screen hidden" id="errorScreen">
     <div class="error-inner">
         <div class="error-icon">⚡</div>
-        <h2>Couldn't load trends</h2>
+        <h2>Couldn't load news</h2>
         <p>Check your connection and try again.</p>
         <button onclick="window.tv.load(true)">Retry</button>
     </div>
@@ -50,13 +50,13 @@
         <div class="topbar-controls">
             <!-- Layout picker -->
             <div class="layout-picker" id="layoutPicker">
-                <button class="layout-btn active" data-layout="1" title="1 item (fullscreen)">
+                <button class="layout-btn active" data-layout="1" title="1 item — fullscreen">
                     <svg width="16" height="16" viewBox="0 0 16 16"><rect x="1" y="1" width="14" height="14" rx="2" fill="currentColor"/></svg>
                 </button>
-                <button class="layout-btn" data-layout="4" title="4 items (2×2)">
+                <button class="layout-btn" data-layout="4" title="4 items — 2×2">
                     <svg width="16" height="16" viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor"/></svg>
                 </button>
-                <button class="layout-btn" data-layout="9" title="9 items (3×3)">
+                <button class="layout-btn" data-layout="9" title="9 items — 3×3">
                     <svg width="16" height="16" viewBox="0 0 16 16"><rect x="1" y="1" width="4" height="4" rx="1" fill="currentColor"/><rect x="6" y="1" width="4" height="4" rx="1" fill="currentColor"/><rect x="11" y="1" width="4" height="4" rx="1" fill="currentColor"/><rect x="1" y="6" width="4" height="4" rx="1" fill="currentColor"/><rect x="6" y="6" width="4" height="4" rx="1" fill="currentColor"/><rect x="11" y="6" width="4" height="4" rx="1" fill="currentColor"/><rect x="1" y="11" width="4" height="4" rx="1" fill="currentColor"/><rect x="6" y="11" width="4" height="4" rx="1" fill="currentColor"/><rect x="11" y="11" width="4" height="4" rx="1" fill="currentColor"/></svg>
                 </button>
             </div>
@@ -73,29 +73,38 @@
         </div>
     </header>
 
-    <!-- Filter panel -->
+    <!-- Filter panel — source chips are injected by JS -->
     <div class="filter-panel hidden" id="filterPanel">
+        <div class="filter-row" id="regionFilterRow">
+            <span class="filter-row-label">Region</span>
+            <div class="chips" id="regionFilters">
+                <button class="chip active" data-region="">All regions</button>
+                <button class="chip" data-region="Australia">Australia</button>
+                <button class="chip" data-region="UK">UK</button>
+                <button class="chip" data-region="USA">USA</button>
+                <button class="chip" data-region="Global">Global</button>
+            </div>
+        </div>
         <div class="filter-row">
             <span class="filter-row-label">Source</span>
             <div class="chips" id="sourceFilters">
-                <button class="chip active" data-source="">All</button>
-                <button class="chip" data-source="Reddit">Reddit</button>
-                <button class="chip" data-source="Hacker News">Hacker News</button>
-                <button class="chip" data-source="GitHub">GitHub</button>
-                <button class="chip" data-source="Product Hunt">Product Hunt</button>
+                <button class="chip active" data-source="">All sources</button>
+                <!-- Populated dynamically by app.js once data loads -->
             </div>
         </div>
         <div class="filter-row">
             <span class="filter-row-label">Category</span>
             <div class="chips" id="categoryFilters">
                 <button class="chip active" data-category="">All</button>
-                <button class="chip" data-category="Technology">Technology</button>
-                <button class="chip" data-category="News">News</button>
-                <button class="chip" data-category="Science">Science</button>
-                <button class="chip" data-category="Gaming">Gaming</button>
-                <button class="chip" data-category="Entertainment">Entertainment</button>
-                <button class="chip" data-category="Sports">Sports</button>
+                <button class="chip" data-category="Australia">Australia</button>
+                <button class="chip" data-category="World">World</button>
+                <button class="chip" data-category="Politics">Politics</button>
                 <button class="chip" data-category="Business">Business</button>
+                <button class="chip" data-category="Technology">Technology</button>
+                <button class="chip" data-category="Science">Science</button>
+                <button class="chip" data-category="Sports">Sports</button>
+                <button class="chip" data-category="Entertainment">Entertainment</button>
+                <button class="chip" data-category="News">News</button>
             </div>
         </div>
     </div>
@@ -115,6 +124,7 @@
         <a class="slide-overlay" id="slideOverlay" href="#" target="_blank" rel="noopener noreferrer">
             <div class="overlay-top">
                 <span class="slide-source" id="slideSource"></span>
+                <span class="slide-region" id="slideRegion"></span>
                 <span class="slide-category" id="slideCategory"></span>
             </div>
             <div class="overlay-bottom">
@@ -122,9 +132,7 @@
                 <h1 class="slide-title" id="slideTitle"></h1>
                 <p class="slide-desc" id="slideDesc"></p>
                 <div class="slide-meta">
-                    <span id="slideMeta1"></span>
-                    <span class="meta-sep">·</span>
-                    <span id="slideMeta2"></span>
+                    <span id="slideAge"></span>
                 </div>
             </div>
         </a>
