@@ -190,7 +190,7 @@
         if (n === 1) {
             modeSingle.classList.remove('hidden');
             modeGrid.classList.add('hidden');
-            currentIdx  = 0;
+            currentIdx  = Math.floor(Math.random() * Math.min(items.length, 10));
             activeLayer = 'A';
             showSlide(currentIdx, false);
             buildQueue();
