@@ -572,4 +572,18 @@ html, body {
     .grid-cells.layout-9,
     .grid-cells.layout-16,
     .grid-cells.layout-25 { grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); }
+
+    /* All grids collapse to 3×3 on mobile — restore compact font sizes */
+    .grid-cells.layout-9 .cell-title,
+    .grid-cells.layout-16 .cell-title,
+    .grid-cells.layout-25 .cell-title { font-size: 0.72rem; -webkit-line-clamp: 3; }
+    .grid-cells.layout-9 .cell-source-badge,
+    .grid-cells.layout-16 .cell-source-badge,
+    .grid-cells.layout-25 .cell-source-badge { font-size: 9px; }
+    .grid-cells.layout-9 .cell-meta,
+    .grid-cells.layout-16 .cell-meta,
+    .grid-cells.layout-25 .cell-meta { font-size: 10px; }
+    .grid-cells.layout-9 .cell-content,
+    .grid-cells.layout-16 .cell-content,
+    .grid-cells.layout-25 .cell-content { padding: 9px; }
 }
