@@ -269,7 +269,7 @@ html, body {
     position: absolute; inset: 0; z-index: 10;
     display: flex; flex-direction: column;
     justify-content: center;
-    padding: 90px 56px 120px;
+    padding: 80px 52px 160px;
     text-decoration: none; color: #fff;
 }
 
@@ -327,26 +327,26 @@ html, body {
 
 .slide-title {
     font-family: var(--font-display);
-    font-size: clamp(2rem, 4.5vw, 4.8rem);
-    font-weight: 700; line-height: 1.12;
+    font-size: clamp(1.6rem, 3.8vw, 3.8rem);
+    font-weight: 700; line-height: 1.15;
     color: #fff;
     text-shadow: 0 2px 18px rgba(0,0,0,0.45);
-    margin-bottom: 18px;
+    margin-bottom: 14px;
     transition: opacity 0.45s ease, transform 0.45s ease;
 }
 
 .slide-desc {
-    font-size: clamp(1rem, 1.4vw, 1.2rem);
-    color: rgba(255,255,255,0.65); line-height: 1.65;
-    max-width: 640px; margin-bottom: 20px;
-    display: -webkit-box; -webkit-line-clamp: 3;
+    font-size: clamp(0.82rem, 1.1vw, 0.95rem);
+    color: rgba(255,255,255,0.6); line-height: 1.6;
+    max-width: 580px; margin-bottom: 16px;
+    display: -webkit-box; -webkit-line-clamp: 2;
     -webkit-box-orient: vertical; overflow: hidden;
     transition: opacity 0.45s ease 0.08s;
 }
 
 .slide-meta {
     display: flex; align-items: center; gap: 8px;
-    font-size: 14px; color: rgba(255,255,255,0.5);
+    font-size: 12px; color: rgba(255,255,255,0.45);
     transition: opacity 0.45s ease 0.12s;
 }
 
@@ -474,44 +474,45 @@ html, body {
 .cell-bg::after {
     content: '';
     position: absolute; inset: 0;
-    background: rgba(0,0,0,0.52);
+    background:
+        linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 55%, transparent 100%);
 }
 
 /* Cell text content */
 .cell-content {
     position: absolute; inset: 0; z-index: 5;
     display: flex; flex-direction: column;
-    justify-content: center;
-    padding: 14px;
+    justify-content: flex-end;
+    padding: 12px;
     text-decoration: none; color: #fff;
 }
 
 .cell-source-badge {
     display: inline-flex; align-items: center; gap: 5px;
-    font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.6px;
     text-transform: uppercase;
-    margin-bottom: 8px;
-    color: rgba(255,255,255,0.7);
+    margin-bottom: 6px;
+    color: rgba(255,255,255,0.65);
 }
 
 .cell-source-dot {
-    width: 7px; height: 7px; border-radius: 50%;
+    width: 6px; height: 6px; border-radius: 50%;
     background: var(--source-color, #fff);
     display: inline-block;
 }
 
 .cell-title {
-    font-size: clamp(0.9rem, 1.3vw, 1.1rem);
-    font-weight: 600; line-height: 1.35; color: #fff;
-    display: -webkit-box; -webkit-line-clamp: 4;
+    font-size: clamp(0.72rem, 1.1vw, 0.95rem);
+    font-weight: 600; line-height: 1.3; color: #fff;
+    display: -webkit-box; -webkit-line-clamp: 3;
     -webkit-box-orient: vertical; overflow: hidden;
-    text-shadow: 0 1px 8px rgba(0,0,0,0.7);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
 }
 
 .cell-meta {
     display: flex; align-items: center; gap: 8px;
-    margin-top: 8px;
-    font-size: 12px; color: rgba(255,255,255,0.5);
+    margin-top: 6px;
+    font-size: 11px; color: rgba(255,255,255,0.45);
 }
 
 /* Open in new tab hint */
@@ -528,7 +529,7 @@ html, body {
 
 /* Rank badge */
 .cell-rank {
-    position: absolute; bottom: 8px; right: 8px; z-index: 10;
+    position: absolute; top: 8px; left: 8px; z-index: 10;
     background: rgba(0,0,0,0.5);
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     border-radius: 5px; padding: 3px 7px;
@@ -537,17 +538,17 @@ html, body {
 }
 
 /* Scale down text in denser grids */
-.grid-cells.layout-16 .cell-title { font-size: 0.82rem; -webkit-line-clamp: 3; }
-.grid-cells.layout-16 .cell-source-badge { font-size: 10px; margin-bottom: 6px; }
-.grid-cells.layout-16 .cell-meta { font-size: 11px; margin-top: 5px; }
-.grid-cells.layout-16 .cell-content { padding: 10px; }
+.grid-cells.layout-16 .cell-title { font-size: 0.72rem; -webkit-line-clamp: 2; }
+.grid-cells.layout-16 .cell-source-badge { font-size: 9px; }
+.grid-cells.layout-16 .cell-meta { font-size: 10px; margin-top: 4px; }
+.grid-cells.layout-16 .cell-content { padding: 8px; }
 .grid-cells.layout-16 .cell-rank { font-size: 9px; padding: 2px 5px; }
 
-.grid-cells.layout-25 .cell-title { font-size: 0.7rem; -webkit-line-clamp: 3; }
-.grid-cells.layout-25 .cell-source-badge { font-size: 9px; gap: 3px; margin-bottom: 5px; }
+.grid-cells.layout-25 .cell-title { font-size: 0.62rem; -webkit-line-clamp: 2; }
+.grid-cells.layout-25 .cell-source-badge { font-size: 8px; gap: 3px; }
 .grid-cells.layout-25 .cell-source-dot { width: 5px; height: 5px; }
 .grid-cells.layout-25 .cell-meta { display: none; }
-.grid-cells.layout-25 .cell-content { padding: 8px; }
+.grid-cells.layout-25 .cell-content { padding: 6px 7px; }
 .grid-cells.layout-25 .cell-rank { font-size: 8px; padding: 2px 4px; }
 
 /* Refresh ripple on cell update */
