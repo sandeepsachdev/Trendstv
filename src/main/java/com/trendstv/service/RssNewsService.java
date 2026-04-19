@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayInputStream;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
@@ -125,11 +126,13 @@ public class RssNewsService {
                 String id = feed.getName().replaceAll("\\s", "_") + "_"
                     + Integer.toHexString((title + url).hashCode());
 
-                items.add(new TrendItem(
+                TrendItem item = new TrendItem(
                     id, title.trim(), desc, url,
                     image, feed.getName(), feed.getRegion(),
                     category, score, 0
-                ));
+                );
+                item.setPublishedAt(Instant.ofEpochMilli(pubMs));
+                items.add(item);
             }
         } catch (Exception ignored) {}
         return items;

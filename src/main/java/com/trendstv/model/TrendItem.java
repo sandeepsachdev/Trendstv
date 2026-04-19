@@ -14,6 +14,7 @@ public class TrendItem {
     private long score;
     private int commentCount;
     private Instant fetchedAt;
+    private Instant publishedAt;
 
     public TrendItem() {}
 
@@ -55,4 +56,6 @@ public class TrendItem {
     public void setCommentCount(int commentCount) { this.commentCount = commentCount; }
     public Instant getFetchedAt() { return fetchedAt; }
     public void setFetchedAt(Instant fetchedAt) { this.fetchedAt = fetchedAt; }
+    public Instant getPublishedAt() { return publishedAt; }
+    public void setPublishedAt(Instant publishedAt) { this.publishedAt = publishedAt; }
 }

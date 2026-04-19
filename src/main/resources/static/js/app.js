@@ -231,10 +231,10 @@
             slideRegion.textContent   = item.sourceIcon || '';  // sourceIcon holds region
             slideCategory.textContent = item.category   || '';
 
-            slideRank.textContent  = '#' + (idx + 1);
+            slideRank.textContent  = '#' + (idx + 1) + ' · ' + relativeTime(item.publishedAt);
             slideTitle.textContent = item.title;
             slideDesc.textContent  = item.description || '';
-            slideAge.textContent   = relativeTime(item.fetchedAt);
+            slideAge.textContent   = '';
 
             slideOverlay.classList.remove('out');
         }, animate ? TRANS_MS / 2 : 0);
@@ -357,7 +357,7 @@
 
         const rank       = document.createElement('div');
         rank.className   = 'cell-rank';
-        rank.textContent = '#' + (itemIdx + 1);
+        rank.textContent = '#' + (itemIdx + 1) + ' · ' + relativeTime(item.publishedAt);
 
         const hint       = document.createElement('div');
         hint.className   = 'cell-open-hint';
@@ -429,7 +429,7 @@
             cellEl.querySelector('.cell-source-badge').lastChild.textContent = item.source;
             cellEl.querySelector('.cell-title').textContent = item.title;
             cellEl.querySelector('.cell-meta').textContent  = relativeTime(item.fetchedAt);
-            cellEl.querySelector('.cell-rank').textContent  = '#' + (newIdx + 1);
+            cellEl.querySelector('.cell-rank').textContent  = '#' + (newIdx + 1) + ' · ' + relativeTime(item.publishedAt);
 
             cellEl.classList.add('refreshing');
             setTimeout(() => cellEl.classList.remove('refreshing'), 800);
