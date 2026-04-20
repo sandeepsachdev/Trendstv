@@ -141,30 +141,49 @@ public class RssNewsService {
     }
 
     private String extractImage(SyndEntry entry, String descHtml) {
-        // 1. Enclosures (podcasts / media RSS)
+        // 1. Enclosures
         if (entry.getEnclosures() != null) {
             for (var enc : entry.getEnclosures()) {
-                if (enc.getType() != null && enc.getType().startsWith("image/")
-                        && enc.getUrl() != null && enc.getUrl().startsWith("http")) {
-                    return enc.getUrl();
-                }
+                if (enc.getUrl() != null && enc.getUrl().startsWith("http")) return enc.getUrl();
             }
         }
-        // 2. media:content / media:thumbnail in foreign markup (most news sites)
+        // 2. media:content / media:thumbnail — direct or nested inside media:group
         if (entry.getForeignMarkup() != null) {
-            for (Element el : entry.getForeignMarkup()) {
-                String name = el.getName();
-                if ("content".equals(name) || "thumbnail".equals(name)) {
-                    String url = el.getAttributeValue("url");
-                    if (url != null && url.startsWith("http")) return url;
+            String url = findMediaUrl(entry.getForeignMarkup());
+            if (url != null) return url;
+        }
+        // 3. content:encoded <img> tag
+        if (entry.getContents() != null) {
+            for (var c : entry.getContents()) {
+                if (c.getValue() != null) {
+                    Matcher m2 = IMG_PATTERN.matcher(c.getValue());
+                    if (m2.find()) {
+                        String src = m2.group(1);
+                        if (src.startsWith("http")) return src;
+                    }
                 }
             }
         }
-        // 3. First <img> in the HTML description
+        // 4. HTML description <img> tag
         Matcher m = IMG_PATTERN.matcher(descHtml);
         if (m.find()) {
             String src = m.group(1);
             if (src.startsWith("http")) return src;
+        }
+        return null;
+    }
+
+    private String findMediaUrl(List<Element> elements) {
+        for (Element el : elements) {
+            String name = el.getName();
+            if ("content".equals(name) || "thumbnail".equals(name)) {
+                String url = el.getAttributeValue("url");
+                if (url != null && url.startsWith("http")) return url;
+            }
+            if (!el.getChildren().isEmpty()) {
+                String url = findMediaUrl(el.getChildren());
+                if (url != null) return url;
+            }
         }
         return null;
     }

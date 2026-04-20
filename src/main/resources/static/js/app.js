@@ -457,8 +457,10 @@
 
     // ── Background helpers ─────────────────────────────────────────
     function applyBgStyle(el, item) {
-        if (item.imageUrl && item.imageUrl.startsWith('http')) {
-            el.style.backgroundImage = `url("${item.imageUrl}")`;
+        if (item.imageUrl) {
+            // Upgrade http → https to avoid mixed-content blocks on HTTPS deployments
+            const url = item.imageUrl.replace(/^http:\/\//i, 'https://');
+            el.style.backgroundImage = `url("${url}")`;
             el.style.backgroundSize  = 'cover';
             el.style.background      = '';
         } else {
