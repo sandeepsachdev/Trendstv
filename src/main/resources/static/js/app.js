@@ -381,12 +381,17 @@
         title.className  = 'cell-title';
         title.textContent = item.title;
 
+        const desc       = document.createElement('div');
+        desc.className   = 'cell-desc';
+        desc.textContent = item.description || '';
+
         const meta       = document.createElement('div');
         meta.className   = 'cell-meta';
-        meta.textContent = relativeTime(item.fetchedAt);
+        meta.textContent = relativeTime(item.publishedAt);
 
         content.appendChild(badge);
         content.appendChild(title);
+        content.appendChild(desc);
         content.appendChild(meta);
         cell.appendChild(bgA);
         cell.appendChild(bgB);
@@ -428,7 +433,8 @@
             dot.style.setProperty('--source-color', SOURCE_COLORS[item.source] || '#fff');
             cellEl.querySelector('.cell-source-badge').lastChild.textContent = item.source;
             cellEl.querySelector('.cell-title').textContent = item.title;
-            cellEl.querySelector('.cell-meta').textContent  = relativeTime(item.fetchedAt);
+            cellEl.querySelector('.cell-desc').textContent  = item.description || '';
+            cellEl.querySelector('.cell-meta').textContent  = relativeTime(item.publishedAt);
             cellEl.querySelector('.cell-rank').textContent  = '#' + (newIdx + 1) + ' · ' + relativeTime(item.publishedAt);
 
             cellEl.classList.add('refreshing');
