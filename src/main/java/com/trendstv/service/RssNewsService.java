@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import org.jdom2.Element;
+
 import java.io.ByteArrayInputStream;
 import java.time.Instant;
 import java.util.*;
@@ -148,7 +150,17 @@ public class RssNewsService {
                 }
             }
         }
-        // 2. First <img> in the HTML description
+        // 2. media:content / media:thumbnail in foreign markup (most news sites)
+        if (entry.getForeignMarkup() != null) {
+            for (Element el : entry.getForeignMarkup()) {
+                String name = el.getName();
+                if ("content".equals(name) || "thumbnail".equals(name)) {
+                    String url = el.getAttributeValue("url");
+                    if (url != null && url.startsWith("http")) return url;
+                }
+            }
+        }
+        // 3. First <img> in the HTML description
         Matcher m = IMG_PATTERN.matcher(descHtml);
         if (m.find()) {
             String src = m.group(1);
